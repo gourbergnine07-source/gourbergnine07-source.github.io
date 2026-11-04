@@ -1,0 +1,61 @@
+# Copia su main i file nuovi o modificati dentro social/ quando vengono
+# pushati su un branch claude/... (immagini e video dei post approvati).
+# Tutto quello che sta fuori da social/ viene ignorato: per quello serve
+# sempre un merge fatto a mano.
+name: Pubblica file social su main
+
+on:
+  push:
+    branches:
+      - "claude/**"
+    paths:
+      - "social/**"
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: social-su-main
+  cancel-in-progress: false
+
+jobs:
+  copia-su-main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scarica il repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Copia i file di social/ dal branch su main
+        id: copia
+        env:
+          SHA: ${{ github.sha }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$SHA"
+          # Solo file aggiunti o modificati, solo dentro social/
+          mapfile -t FILES < <(git diff --name-only --diff-filter=AM main "$SHA" -- social/)
+          if [ "${#FILES[@]}" -eq 0 ]; then
+            echo "Niente di nuovo in social/: main è già aggiornato."
+            echo "pushed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          printf 'Copio su main:\n'; printf '  %s\n' "${FILES[@]}"
+          git checkout "$SHA" -- "${FILES[@]}"
+          git add -- "${FILES[@]}"
+          git commit -m "Social: file da $BRANCH" -m "Copiati automaticamente da ${SHA:0:7} (solo social/)."
+          git push origin HEAD:main
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Chiedi a GitHub Pages di ripubblicare il sito
+        if: steps.copia.outputs.pushed == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST "repos/${{ github.repository }}/pages/builds"
