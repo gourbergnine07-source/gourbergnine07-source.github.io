@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Builds the Tavolata press kit (index.html = Italian, <lang>.html = the other 7 game languages). Claude, 25/11/2026.
+# Builds the Tavolata press kit (index.html = Italian, <lang>.html = the other 7 game languages). Claude, 25/11/2026; new layout in layout.py (26/11/2026).
 # Facts come from the App Store texts of version 1.0.9 and PROJECT.md (verified).
 import html, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -48,37 +48,9 @@ T = {
   foot="Tavolata: Recipe Puzzle · an independent game made in Italy", lang="en")}
 for k, v in MORE.items():
     T[k] = dict(v, file=k + ".html", lang=k, contact="tavolata07@gmail.com")
-LANGS = [("it", "Italiano"), ("en", "English"), ("fr", "Français"), ("es", "Español"), ("pt", "Português"), ("de", "Deutsch"), ("ja", "日本語"), ("zh", "繁體中文")]
-HL = {"zh": "zh-Hant"}
-TRAILER_H = {"it": "Trailer (30 secondi)", "en": "Trailer (30 seconds)", "fr": "Bande-annonce (30 secondes)", "es": "Tráiler (30 segundos)",
-             "pt": "Trailer (30 segundos)", "de": "Trailer (30 Sekunden)", "ja": "トレーラー（30秒）", "zh": "預告片（30 秒）"}
-TRAILER_DL = {"it": "Scarica il video", "en": "Download the video", "fr": "Télécharger la vidéo", "es": "Descargar el vídeo",
-              "pt": "Baixar o vídeo", "de": "Video herunterladen", "ja": "動画をダウンロード", "zh": "下載影片"}
-SHOTS = ["01_partita", "02_restauro", "04_viaggio", "05_ricettario", "06_vittoria"]
+import layout
+layout.thumbs()
 for L in T.values():
-    facts = "".join(f"<tr><th>{e(a)}</th><td>{e(b)}</td></tr>" for a, b in L["facts"])
-    vl = "it" if L["lang"] == "it" else "en"
-    opts = "".join(f'<option value="{T[c]["file"]}"{" selected" if c == L["lang"] else ""}>{n}</option>' for c, n in LANGS)
-    shots = "".join(f'<a href="img/{L["lang"]}_{s}.jpg" target="_blank"><img src="img/{L["lang"]}_{s}.jpg" alt="" loading="lazy"></a>' for s in SHOTS)
-    page = f"""<!doctype html><html lang="{HL.get(L['lang'], L['lang'])}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{e(L['title'])}</title><meta name="description" content="{e(L['lead'])}"><link rel="icon" href="../../ricette/img/site_icon.png"><link rel="stylesheet" href="../../ricette/site.css">
-<style>.pk table{{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}}
-.pk th,.pk td{{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}}.pk th{{width:32%;color:var(--muted);font-weight:600}}
-.shots{{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}}.shots img{{width:100%;border-radius:14px;border:1px solid var(--line)}}
-.logos{{display:flex;gap:20px;align-items:end;flex-wrap:wrap}}.logos img{{height:160px;border-radius:24px}}
-.pr{{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px 24px}}.pr h3{{font-family:Georgia,serif;font-size:24px;margin:0 0 10px}}
-.todo{{background:#fff3cd;color:#5c4400;border-radius:8px;padding:8px 12px;display:inline-block}}</style></head><body>
-<div class="cloth"></div><header><div class="wrap"><a class="brand" href="../../ricette/{'' if L['lang']=='it' else L['lang'] + '/'}index.html"><img src="../../ricette/img/site_icon.png" alt="">Tavolata</a>
-<nav><a href="../../ricette/{'' if L['lang']=='it' else L['lang'] + '/'}index.html">{e(L['nav_rec'])}</a><select class="lang" aria-label="Language" onchange="location.href=this.value">{opts}</select><a class="btn hide" href="{STORE}">{e(L['nav_dl'])}</a></nav></div></header>
-<main class="wrap pk"><h1 style="font-family:Georgia,serif;font-size:42px;margin:26px 0 6px">{e(L['h1'])}</h1><p class="lead">{e(L['lead'])}</p>
-<h2 class="h">{e(L['facts_h'])}</h2><table>{facts}</table>
-<h2 class="h">{e(L['pr_h'])}</h2><div class="pr"><h3>{e(L['pr_title'])}</h3>{''.join(f'<p>{e(p)}</p>' for p in L['pr'])}
-<p><b>{e(L['quote_h'])}:</b> <i>{e(L['quote'])}</i></p></div>
-<h2 class="h">{e(TRAILER_H[L['lang']])}</h2><div style="max-width:360px"><video controls playsinline preload="metadata" poster="video/poster_{vl}.jpg" style="width:100%;border-radius:18px;border:1px solid var(--line);background:#000"><source src="video/Tavolata_trailer_{vl}.mp4" type="video/mp4"></video><p class="small"><a href="video/Tavolata_trailer_{vl}.mp4" download>{e(TRAILER_DL[L['lang']])}</a></p></div>
-<h2 class="h">{e(L['img_h'])}</h2><p class="small">{e(L['img_p'])}</p><div class="shots">{shots}</div>
-<h2 class="h">{e(L['logo_h'])}</h2><div class="logos"><a href="img/tavolata_icona_1024.png" target="_blank"><img src="img/tavolata_icona_1024.png" alt="Tavolata"></a><a href="img/tavolata_chef.png" target="_blank"><img src="img/tavolata_chef.png" alt="Chef" style="border-radius:0"></a></div>
-<h2 class="h">{e(L['contact_h'])}</h2><p>Email: <a href="mailto:{L['contact']}">{e(L['contact'])}</a> · App Store: <a href="{STORE}">apps.apple.com/app/id6822874736</a></p>
-</main><footer><div class="wrap"><span>{e(L['foot'])}</span><span class="sp"></span><a href="../diario/{'index' if L['lang']=='it' else 'en'}.html">{'Diario di sviluppo' if L['lang']=='it' else 'Devlog'}</a></div></footer><div class="cloth"></div></body></html>
-"""
-    open(L["file"], "w").write(page)
+    open(L["file"], "w").write(layout.page(L, T))
+layout.build_zip(T)
 print("ok")
